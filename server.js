@@ -451,6 +451,8 @@ function runCommand(conn, command, opts) {
   let finished = false;
   let lastData = Date.now();
   let stallNotified = false;
+  let promptShown = false;
+  const hardIdleMs = opts.longRunning ? (opts.hardIdleMs || 8 * 60 * 1000) : 0;
 
   const finish = (code) => {
     if (finished) return;
@@ -470,48 +472,81 @@ function runCommand(conn, command, opts) {
     const idle = Date.now() - lastData;
     const elapsed = Date.now() - startedAt;
     opts.onTick && opts.onTick({ elapsedMs: elapsed, idleMs: idle });
+    // 交互提示（read -p）没有换行，正常分帧会一直憋在缓冲区里 → 空闲 2 秒后单独提出来
+    if (!promptShown && idle > 2000) {
+      const partial = feeder.getPartial();
+      if (partial && partial.trim()) {
+        promptShown = true;
+        opts.onPrompt && opts.onPrompt(partial.trim());
+      }
+    }
     if (!stallNotified && idle > stallWarnMs) {
       stallNotified = true;
       opts.onStall && opts.onStall({ idleMs: idle, elapsedMs: elapsed });
+    }
+    if (hardIdleMs && idle > hardIdleMs) {
+      opts.onTimeout && opts.onTimeout({ idleMs: idle, elapsedMs: elapsed });
+      try { stream.close(); } catch (_) {}
+      finish(-2);
+      return;
     }
     if (idle > maxWait) {
       try { stream.close(); } catch (_) {}
       finish(-1);
     }
-  }, 5000);
+  }, 1000);
   let stream = null;
 
-  conn.exec(command, { pty: { mode: 'echo' }, env: { TERM: 'xterm' } }, (err, s) => {
-    if (err) { clearInterval(timer); finish(-1); return; }
+  try {
+    conn.exec(command, { pty: { mode: 'echo' }, env: { TERM: 'xterm' } }, (err, s) => {
+      if (err) {
+        clearInterval(timer);
+        opts.onError && opts.onError(err);
+        finish(-1);
+        return;
+      }
     stream = s;
     s.on('close', (code) => finish(code))
       .on('data', (data) => {
         lastData = Date.now();
+        stallNotified = false;
+        promptShown = false;
         const text = data.toString('utf8');
         raw.push(text);
         feeder.feed(text);
       });
     s.stderr.on('data', (data) => {
       lastData = Date.now();
+      stallNotified = false;
+      promptShown = false;
       const text = data.toString('utf8');
       raw.push(text);
       feeder.feed(text);
     });
-    if (opts.feedStdin) {
-      try { s.write(opts.feedStdin); } catch (_) {}
-    }
-  });
+      if (opts.feedStdin) {
+        try { s.write(opts.feedStdin); } catch (_) {}
+      }
+    });
+  } catch (e) {
+    clearInterval(timer);
+    opts.onError && opts.onError(e);
+    finish(-1);
+  }
 }
 
 /** 执行一条命令并收集完整输出 */
 function execCapture(conn, command, cb) {
   let raw = '';
-  conn.exec(command, (err, stream) => {
-    if (err) { cb(err, ''); return; }
-    stream.on('close', () => cb(null, raw))
-      .on('data', (d) => { raw += d.toString('utf8'); })
-      .stderr.on('data', (d) => { raw += d.toString('utf8'); });
-  });
+  try {
+    conn.exec(command, (err, stream) => {
+      if (err) { cb(err, ''); return; }
+      stream.on('close', () => cb(null, raw))
+        .on('data', (d) => { raw += d.toString('utf8'); })
+        .stderr.on('data', (d) => { raw += d.toString('utf8'); });
+    });
+  } catch (e) {
+    cb(e, '');
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -635,6 +670,9 @@ io.on('connection', (socket) => {
 
     const conn = new Client();
     activeConn.set(socket.id, conn);
+    let installTimedOut = false;
+    let installFailed = false;
+    let installRunning = false;
 
     conn.on('ready', () => {
       emit('log', { level: 'success', text: '✓ SSH 连接成功' });
@@ -686,10 +724,34 @@ io.on('connection', (socket) => {
         emit('cmd', { text: cmd.full });
         emit('log', { level: 'info', text: '下载地址：' + cmd.url });
 
+        installTimedOut = false;
+        installFailed = false;
+        installRunning = true;
         runCommand(conn, cmd.full, {
           longRunning: true,
+          stallWarnMs: 60 * 1000,
+          hardIdleMs: 10 * 60 * 1000,
           feedStdin: 'y\nyes\n',
           onTick: (t) => emit('tick', t),
+          onPrompt: (text) => {
+            emit('prompt', { text });
+            emit('log', { level: 'warn', text: '服务器正在等待输入：' + text });
+          },
+          onError: (e) => {
+            installFailed = true;
+            installRunning = false;
+            emit('install:failed', { error: '执行安装命令失败：' + (e && e.message ? e.message : e) });
+            activeConn.delete(socket.id);
+          },
+          onTimeout: (t) => {
+            installTimedOut = true;
+            installRunning = false;
+            emit('install:failed', {
+              error: '服务器已有 ' + Math.round(t.idleMs / 60000) + ' 分钟没有任何输出，安装已停止。'
+                + '常见原因是下载节点停滞或脚本卡在交互确认，请换一条下载线路重试。',
+            });
+            activeConn.delete(socket.id);
+          },
           onStall: (t) => emit('install:stall', {
             idleSec: Math.round(t.idleMs / 1000),
             elapsedSec: Math.round(t.elapsedMs / 1000),
@@ -700,6 +762,8 @@ io.on('connection', (socket) => {
             if (line.trim()) emit('term', line + '\n');
           },
           onExit: (code, raw) => {
+            if (installTimedOut || installFailed) return;
+            installRunning = false;
             if (/===BT_DOWNLOAD_FAILED===/.test(raw)) {
               emit('install:failed', { error: '安装脚本下载失败：服务器无法访问宝塔下载节点。请换一个下载线路（如 CDN / 香港 / 欧美线路）后重试。' });
               activeConn.delete(socket.id);
@@ -726,7 +790,15 @@ io.on('connection', (socket) => {
         }
         emit('install:failed', { error: friendlySSHError(e) });
       })
-      .on('close', () => { activeConn.delete(socket.id); });
+      .on('close', () => {
+        activeConn.delete(socket.id);
+        if (installRunning && !installTimedOut) {
+          installRunning = false;
+          emit('install:failed', {
+            error: 'SSH 连接在安装过程中断开，安装可能仍在服务器上继续。请等待 2–5 分钟后用「面板急救箱」查看面板是否已启动，或重新连接后重试。',
+          });
+        }
+      });
 
     try { conn.connect(makeConnConfig(cfg)); } catch (e) { emit('install:failed', { error: friendlySSHError(e) }); }
   });

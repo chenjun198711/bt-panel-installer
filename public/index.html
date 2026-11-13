@@ -361,9 +361,9 @@ textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(109,74,2
 
       <div class="hint-box warn hidden" id="stallHint">⏳
         <div>
-          <b>已 <span id="stallIdle">0</span> 秒没有新的输出，看起来卡在下载阶段。</b>
-          宝塔安装脚本需要下载 Python 源码等较多文件（合计约 100 MB），部分节点很慢甚至中途停滞。
-          可以继续等，也可以中止后换一条线路重试（已装的文件会复用，不会从头再来）。
+<b>已 <span id="stallIdle">0</span> 秒没有新的输出，可能卡在下载或等待确认。</b>
+          宝塔安装脚本需要下载 Python 源码等较多文件（合计约 100 MB），部分节点很慢甚至中途停滞；
+          如果服务器在等待输入，日志里会出现「等待输入」提示。可以继续等，也可以中止后换一条线路重试。
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
             <button class="mini-btn" onclick="hideStall()">继续等待</button>
             <button class="mini-btn" onclick="abortAndRetry()">换线路重试</button>
@@ -866,11 +866,40 @@ function copyTerm() {
   copyText(termText || '(暂无日志)');
 }
 
+/* 日志合并渲染：同一帧内的多行一次写入，避免安装脚本刷屏把 WebView 拖死 */
+const termQueue = [];
+let termFlushScheduled = false;
+const TERM_MAX_BATCH = 200;
+
+function enqueueTerm(line) {
+  termQueue.push(line);
+  if (!termFlushScheduled) {
+    termFlushScheduled = true;
+    requestAnimationFrame(flushTermQueue);
+  }
+}
+
+function flushTermQueue() {
+  termFlushScheduled = false;
+  if (!termQueue.length) return;
+  const batch = termQueue.splice(0, TERM_MAX_BATCH).join('');
+  appendTerm(batch);
+  if (termQueue.length) {
+    termFlushScheduled = true;
+    requestAnimationFrame(flushTermQueue);
+  }
+}
+
 socket.on('log', (d) => {
   if (d && d.text) appendTerm('[' + ({ info: '安装器', success: '安装器', warn: '安装器', error: '安装器' }[d.level] || '安装器') + '] ' + d.text + '\n', d.level);
 });
-socket.on('term', (line) => appendTerm(line));
+socket.on('term', (line) => enqueueTerm(line));
 socket.on('progress', (text) => { if (text) updateProgress(String(text)); });
+socket.on('prompt', (d) => {
+  if (!d || !d.text) return;
+  enqueueTerm('[等待输入] ' + d.text + '\n');
+  $('stallHint').classList.remove('hidden');
+});
 socket.on('cmd', (d) => { if (d && d.text) appendTerm('[命令] ' + d.text + '\n', 'warn'); });
 socket.on('stage', (d) => { if (d && d.stage) setStage(d.stage); if (d && d.text) $('instTitle').textContent = d.text; });
 socket.on('system', (d) => {

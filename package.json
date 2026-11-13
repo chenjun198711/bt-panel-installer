@@ -1,6 +1,6 @@
 {
   "name": "bt-panel-installer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Visual Baota (aaPanel/BT-Panel) installer for Windows desktop",
   "main": "server.js",
   "scripts": {
