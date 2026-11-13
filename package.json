@@ -1,0 +1,19 @@
+{
+  "name": "bt-panel-installer",
+  "version": "1.0.0",
+  "description": "Visual Baota (aaPanel/BT-Panel) installer for Windows desktop",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "Jasson",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.4",
+    "ssh2": "^1.17.0"
+  }
+}

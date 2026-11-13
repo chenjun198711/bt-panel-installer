@@ -1,0 +1,30 @@
+# 依赖
+node_modules/
+
+# 运行时日志
+*.log
+
+# 环境变量 / 密钥
+.env
+.env.*
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 构建与运行时产物（Release 走 GitHub Releases）
+data/
+runtime/
+dist/
+release/
+build/
+.tmp/
+*.exe
+*.dll
+*.nupkg
+*.zip
+
+# 工具缓存
+.ruff_cache/
+.dumate/

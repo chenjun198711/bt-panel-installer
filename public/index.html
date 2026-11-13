@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宝塔面板一键安装器 · 桌面版</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<style>
+:root {
+  --bg: #fafafa;
+  --card: #ffffff;
+  --text: #1a1a2e;
+  --text-2: #5b5b73;
+  --text-3: #8b8ba3;
+  --brand: #6d4aff;
+  --brand-2: #9b6dff;
+  --brand-soft: #f1ecff;
+  --brand-border: #ddd2ff;
+  --border: #ececf3;
+  --success: #0f9d58;
+  --success-soft: #e9f8ef;
+  --danger: #d93025;
+  --danger-soft: #fdecea;
+  --warn: #b45309;
+  --warn-soft: #fef7e6;
+  --radius: 14px;
+  --mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: "Microsoft YaHei UI", "PingFang SC", system-ui, -apple-system, sans-serif;
+  font-size: 14px; line-height: 1.65;
+}
+a { color: var(--brand); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* 顶部导航 */
+.nav { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+.nav-inner { max-width: 1080px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+.logo-mark { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; font-size: 17px; }
+.logo small { font-weight: 500; color: var(--text-3); font-size: 12.5px; margin-left: 2px; }
+.nav-links { display: flex; align-items: center; gap: 6px; }
+.nav-links a { color: var(--text-2); font-size: 13px; padding: 6px 11px; border-radius: 8px; }
+.nav-links a:hover { color: var(--brand); background: var(--brand-soft); text-decoration: none; }
+
+.container { max-width: 1080px; margin: 0 auto; padding: 28px 24px 64px; }
+
+/* 首页 */
+.hero { text-align: center; padding: 26px 0 8px; }
+.hero h1 { font-size: 30px; margin: 12px 0 10px; letter-spacing: -.5px; }
+.hero h1 .grad { background: linear-gradient(135deg, var(--brand), var(--brand-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p { color: var(--text-2); max-width: 620px; margin: 0 auto; }
+.hero-badge { display: inline-flex; align-items: center; gap: 7px; background: var(--brand-soft); color: var(--brand); border: 1px solid var(--brand-border); border-radius: 999px; padding: 5px 13px; font-size: 12.5px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+.entry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 26px; }
+.entry { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: left; cursor: pointer; transition: all .18s; }
+.entry:hover { border-color: var(--brand-border); box-shadow: 0 6px 20px rgba(109,74,255,.10); transform: translateY(-2px); }
+.entry-ico { font-size: 20px; }
+.entry h3 { margin: 8px 0 4px; font-size: 15px; }
+.entry p { margin: 0; color: var(--text-3); font-size: 12.5px; line-height: 1.6; }
+
+/* 卡片与步骤 */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.steps-bar { display: flex; align-items: center; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: #fcfcff; }
+.step-item { display: flex; align-items: center; gap: 7px; color: var(--text-3); font-size: 12.5px; }
+.step-item .num { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #f0f0f6; color: var(--text-3); font-size: 12px; font-weight: 600; }
+.step-item.active { color: var(--brand); font-weight: 600; }
+.step-item.active .num { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; }
+.step-item.done .num { background: var(--success-soft); color: var(--success); }
+.step-sep { flex: 1; height: 1px; background: var(--border); }
+.pane { display: none; padding: 22px; }
+.pane.show { display: block; }
+.pane-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.pane-desc { color: var(--text-2); font-size: 13px; margin-bottom: 18px; }
+
+/* 提示条 */
+.hint-box { display: flex; gap: 10px; background: var(--brand-soft); border: 1px solid var(--brand-border); color: var(--text-2); border-radius: 12px; padding: 11px 15px; font-size: 12.5px; margin-bottom: 18px; }
+.hint-box b { color: var(--text); }
+.hint-box.warn { background: var(--warn-soft); border-color: #f6dfb0; color: #7c4a03; }
+.hint-box.success { background: var(--success-soft); border-color: #bfe8d0; color: #0b6b3a; }
+.hint-box.danger { background: var(--danger-soft); border-color: #f6c7c2; color: #8f1f18; }
+.hint-box a { color: var(--brand); font-weight: 600; border-bottom: 1px dashed var(--brand-border); }
+.hint-box a:hover { border-bottom-color: transparent; text-decoration: none; }
+
+/* 表单 */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.form-item { display: flex; flex-direction: column; gap: 6px; }
+.form-item.full { grid-column: 1 / -1; }
+label { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+label .req { color: var(--danger); margin-left: 2px; }
+label .tip { font-weight: 400; color: var(--text-3); font-size: 11.5px; margin-left: 4px; }
+input[type=text], input[type=password], input[type=number], select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+  font-size: 13.5px; font-family: inherit; background: #fff; color: var(--text); outline: none; transition: all .15s;
+}
+input:focus, select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(109,74,255,.10); }
+input.invalid { border-color: var(--danger); background: #fff8f8; }
+.field-error { display: none; color: var(--danger); font-size: 11.5px; }
+input.invalid + .field-error { display: block; }
+.input-with-btn { display: flex; gap: 8px; align-items: center; }
+.input-with-btn input { flex: 1; }
+.mini-btn { white-space: nowrap; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--border); background: #fff; color: var(--text-2); font-size: 12.5px; cursor: pointer; font-family: inherit; }
+.mini-btn:hover { border-color: var(--brand-border); color: var(--brand); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 10px; border: none; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+.btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; box-shadow: 0 4px 12px rgba(109,74,255,.25); }
+.btn-primary:hover { filter: brightness(1.06); box-shadow: 0 6px 18px rgba(109,74,255,.32); }
+.btn-secondary { background: #fff; color: var(--text-2); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--brand-border); color: var(--brand); }
+.btn-sm { padding: 7px 13px; font-size: 12.5px; border-radius: 8px; }
+.btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--border); }
+
+/* 连接状态 */
+.conn-status { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 10px 14px; border-radius: 10px; font-size: 13px; }
+.conn-status.ok { background: var(--success-soft); color: #0b6b3a; border: 1px solid #bfe8d0; }
+.conn-status.fail { background: var(--danger-soft); color: #8f1f18; border: 1px solid #f6c7c2; }
+.conn-status:empty { display: none; }
+.spinner { width: 13px; height: 13px; border: 2px solid var(--brand-border); border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 版本选择 */
+.radio-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.radio-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; background: #fff; transition: all .15s; }
+.radio-card:hover { border-color: var(--brand-border); }
+.radio-card.selected { border-color: var(--brand); background: var(--brand-soft); }
+.radio-card .rc-title { font-weight: 600; font-size: 13.5px; display: flex; justify-content: space-between; gap: 8px; }
+.radio-card .rc-note { color: var(--text-3); font-size: 11.5px; margin-top: 3px; }
+.rc-check { color: var(--brand); font-weight: 700; }
+
+/* 系统信息表 */
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 12px 0; }
+.info-cell { background: #fbfbff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.info-cell .k { color: var(--text-3); font-size: 11.5px; }
+.info-cell .v { font-weight: 600; font-size: 13px; margin-top: 2px; word-break: break-all; }
+
+/* 终端 */
+.term { background: #16161f; border-radius: 12px; overflow: hidden; margin-top: 14px; }
+.term-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: #1e1e2a; color: #a9a9c0; font-size: 12px; }
+.term-dots { display: flex; gap: 6px; }
+.term-dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+.term-body { height: 340px; overflow-y: auto; padding: 12px 14px; color: #d8d8e8; font-family: var(--mono); font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+.term-body .l-success { color: #7ee787; }
+.term-body .l-error { color: #ff7b72; }
+.term-body .l-warn { color: #f2cc60; }
+.term-body .l-progress { color: #8ab4ff; }
+
+/* 阶段列表 */
+.stage-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.stage { display: flex; gap: 10px; align-items: center; color: var(--text-3); font-size: 13px; }
+.stage .num { width: 22px; height: 22px; border-radius: 50%; background: #f0f0f6; display: grid; place-items: center; font-size: 11.5px; color: var(--text-3); }
+.stage.active { color: var(--brand); font-weight: 600; }
+.stage.active .num { background: var(--brand-soft); color: var(--brand); }
+.stage.done { color: var(--success); }
+.stage.done .num { background: var(--success-soft); color: var(--success); }
+
+/* 结果卡 */
+.result-box { background: var(--success-soft); border: 1px solid #bfe8d0; border-radius: 14px; padding: 18px; margin-top: 16px; }
+.result-title { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #0b6b3a; font-size: 16px; margin-bottom: 4px; }
+.result-sub { color: #2f7a52; font-size: 12.5px; margin-bottom: 14px; }
+.copy-row { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d9efe2; border-radius: 10px; padding: 10px 13px; margin-bottom: 9px; }
+.copy-row .label { color: var(--text-3); font-size: 11.5px; }
+.copy-row .value { font-family: var(--mono); font-size: 13px; color: var(--text); word-break: break-all; flex: 1; }
+.copy-row .value.pass { letter-spacing: .5px; }
+
+/* 其他 */
+.mono { font-family: var(--mono); }
+.small { font-size: 12px; color: var(--text-3); }
+.section-title { font-size: 14px; font-weight: 700; margin: 18px 0 10px; }
+textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-family: var(--mono); font-size: 12.5px; resize: vertical; outline: none; }
+textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(109,74,255,.10); }
+.cmd-box { background: #16161f; color: #d8d8e8; border-radius: 12px; padding: 14px; font-family: var(--mono); font-size: 12px; line-height: 1.7; word-break: break-all; white-space: pre-wrap; }
+.out-box { background: #fbfbff; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-family: var(--mono); font-size: 12px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; color: var(--text-2); }
+.toast { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px); background: #1a1a2e; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; opacity: 0; pointer-events: none; transition: all .22s; z-index: 200; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.hidden { display: none !important; }
+.footer { border-top: 1px solid var(--border); padding: 18px 24px; text-align: center; color: var(--text-3); font-size: 12px; }
+.footer a { color: var(--text-2); }
+/* ---------- 主机指纹确认弹窗 ---------- */
+.modal { position: fixed; inset: 0; background: rgba(18,18,34,.55); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.modal.hidden { display: none; }
+.modal-card { width: 520px; max-width: calc(100vw - 40px); background: #fff; border-radius: 14px; padding: 22px 24px; box-shadow: 0 24px 64px rgba(20,20,40,.28); }
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.modal-card p { margin: 8px 0; color: var(--text-2); font-size: 13px; line-height: 1.6; }
+.fp { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; background: #f5f5fa; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; word-break: break-all; color: var(--text); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.modal-actions .btn { min-width: 96px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-mark">🛡️</div>
+      宝塔面板一键安装器 <small>桌面版</small>
+    </div>
+    <div class="nav-links">
+      <a href="https://www.vpsjh.com" target="_blank" rel="noopener">VPS聚合站</a>
+      <a href="https://www.bt.cn/new/download.html" target="_blank" rel="noopener">宝塔官网</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- 首页 -->
+  <section class="hero" id="hero">
+    <div class="hero-badge"><span class="dot"></span>自动识别系统 · 调用官方脚本 · 全程可视化</div>
+    <h1>一键安装 <span class="grad">宝塔面板</span></h1>
+    <p>填服务器信息，程序自动识别系统类型与版本，选择对应的宝塔官方安装脚本并执行，最后把面板地址、账号、密码直接交给你。</p>
+    <div class="entry-grid">
+      <div class="entry" onclick="goStep(1)">
+        <div class="entry-ico">🚀</div>
+        <h3>开始安装</h3>
+        <p>四步完成部署：服务器信息 → 面板配置 → 自动安装 → 安装完成</p>
+      </div>
+      <div class="entry" onclick="goStep('rescue')">
+        <div class="entry-ico">🩹</div>
+        <h3>面板急救箱</h3>
+        <p>忘记面板地址、账号、端口，或面板打不开时，直接连服务器查看与修复</p>
+      </div>
+      <div class="entry" onclick="goStep('domain')">
+        <div class="entry-ico">🔒</div>
+        <h3>域名与HTTPS</h3>
+        <p>检查域名解析、查看面板 HTTPS 状态，避免「不是安全连接」的告警</p>
+      </div>
+      <div class="entry" onclick="goStep('cmd')">
+        <div class="entry-ico">⌨️</div>
+        <h3>直接给我命令</h3>
+        <p>不想用向导？生成一条可复制到任意 SSH 客户端执行的安装命令</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 向导 / 工具区 -->
+  <div class="card hidden" id="wizard">
+    <div class="steps-bar" id="stepsBar">
+      <div class="step-item" data-step="1"><span class="num">1</span>服务器信息</div>
+      <div class="step-sep"></div>
+      <div class="step-item" data-step="2"><span class="num">2</span>面板配置</div>
+      <div class="step-sep"></div>
+      <div class="step-item" data-step="3"><span class="num">3</span>自动安装</div>
+      <div class="step-sep"></div>
+      <div class="step-item" data-step="4"><span class="num">4</span>安装完成</div>
+    </div>
+
+    <!-- 第一步 -->
+    <div class="pane show" data-pane="1">
+      <div class="pane-title">第一步：填写你的服务器（VPS）信息</div>
+      <div class="pane-desc">程序通过 SSH 直连你的服务器执行安装，密码只在你电脑内存中短暂停留，不会上传到任何第三方。</div>
+
+      <div class="hint-box">💡
+        <div>不知道去哪找这些信息？登录你购买 VPS 的平台（如 <a href="https://www.vultr.com/?ref=9920736" target="_blank" rel="noopener">Vultr</a>、<a href="https://bwh81.net/aff.php?aff=84102" target="_blank" rel="noopener">搬瓦工</a>、<a href="https://my.zorocloud.com/aff.php?aff=958" target="_blank" rel="noopener">ZoroCloud</a>、<a href="https://www.dmit.io/aff.php?aff=22794" target="_blank" rel="noopener">Dmit</a> 等），在控制台一般就能看到 <b>IP 地址</b>、<b>root 密码</b>和<b>SSH端口</b>。</div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-item">
+          <label>服务器 IP 地址 <span class="req">*</span></label>
+          <input type="text" id="host" placeholder="例如 104.17.20.100" autocomplete="off">
+          <div class="field-error">请填写服务器 IP</div>
+        </div>
+        <div class="form-item">
+          <label>SSH 端口 <span class="tip">一般不用改</span></label>
+          <input type="number" id="sshPort" value="22">
+        </div>
+        <div class="form-item">
+          <label>SSH 用户名 <span class="tip">绝大多数是 root</span></label>
+          <input type="text" id="sshUser" value="root">
+        </div>
+        <div class="form-item">
+          <label>登录方式</label>
+          <select id="authType" onchange="toggleAuthMode()">
+            <option value="password">密码登录（推荐小白）</option>
+            <option value="key">密钥登录</option>
+          </select>
+        </div>
+        <div class="form-item full" id="passwordItem">
+          <label>SSH 密码 <span class="req">*</span></label>
+          <div class="input-with-btn">
+            <input type="password" id="sshPass" placeholder="服务器 root 密码">
+            <button class="mini-btn" onclick="togglePwd()">👁 显示</button>
+          </div>
+          <div class="field-error">请填写 SSH 密码</div>
+        </div>
+        <div class="form-item full hidden" id="keyItem">
+          <label>私钥内容 <span class="req">*</span></label>
+          <textarea id="sshKey" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
+          <div class="field-error">请粘贴私钥</div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary btn-sm" id="testBtn" onclick="testConnection()">🔌 测试连接</button>
+      <div class="conn-status" id="connStatus"></div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="goStep('home')">← 返回</button>
+        <button class="btn btn-primary" onclick="goStep(2)">下一步：面板配置 →</button>
+      </div>
+    </div>
+
+    <!-- 第二步 -->
+    <div class="pane" data-pane="2">
+      <div class="pane-title">第二步：设置面板账号与安装选项</div>
+      <div class="pane-desc">这些是你以后登录宝塔面板用的信息。未知项留空即可，程序会随机生成并在完成后展示。</div>
+
+      <div class="hint-box">💡
+        <div>程序会先连上服务器识别系统类型与版本，再从宝塔官方脚本中挑选对应版本执行；<b>不支持的系统会被拦下</b>，不会强行安装。</div>
+      </div>
+
+      <div class="section-title">面板账号（可选，留空自动随机）</div>
+      <div class="form-grid">
+        <div class="form-item">
+          <label>面板用户名</label>
+          <input type="text" id="panelUser" value="admin">
+        </div>
+        <div class="form-item">
+          <label>面板密码</label>
+          <div class="input-with-btn">
+            <input type="text" id="panelPass" placeholder="留空自动生成 12 位随机密码">
+            <button class="mini-btn" onclick="fillRandom()">🎲 随机</button>
+          </div>
+        </div>
+        <div class="form-item">
+          <label>面板端口 <span class="tip">10000–65535</span></label>
+          <input type="number" id="panelPort" placeholder="留空自动生成">
+        </div>
+        <div class="form-item">
+          <label>安全入口 <span class="tip">留空自动生成，更安全</span></label>
+          <input type="text" id="safePath" placeholder="例如 btp-a1b2c3">
+        </div>
+      </div>
+
+      <div class="section-title">选择安装版本</div>
+      <div class="radio-cards" id="versionCards"></div>
+
+      <div class="section-title">下载线路 <span class="small">服务器访问宝塔节点慢或失败时更换</span></div>
+      <div class="radio-cards" id="mirrorCards"></div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="goStep(1)">← 上一步</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="goStep('cmd')">只生成命令</button>
+          <button class="btn btn-primary" onclick="startInstall()">🚀 开始自动安装</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第三步 -->
+    <div class="pane" data-pane="3">
+      <div class="pane-title" id="instTitle">正在准备安装…</div>
+      <div class="pane-desc">下面是服务器的真实输出。安装通常需要 2–5 分钟，期间请勿关闭窗口。</div>
+
+      <div class="stage-list" id="stageList">
+        <div class="stage" data-stage="1"><span class="num">1</span>连接服务器并识别系统类型与版本</div>
+        <div class="stage" data-stage="2"><span class="num">2</span>下载并执行宝塔官方安装脚本</div>
+        <div class="stage" data-stage="3"><span class="num">3</span>核对面板信息并生成访问地址</div>
+      </div>
+
+      <div class="hint-box warn hidden" id="stallHint">⏳
+        <div>
+          <b>已 <span id="stallIdle">0</span> 秒没有新的输出，看起来卡在下载阶段。</b>
+          宝塔安装脚本需要下载 Python 源码等较多文件（合计约 100 MB），部分节点很慢甚至中途停滞。
+          可以继续等，也可以中止后换一条线路重试（已装的文件会复用，不会从头再来）。
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="mini-btn" onclick="hideStall()">继续等待</button>
+            <button class="mini-btn" onclick="abortAndRetry()">换线路重试</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="term">
+        <div class="term-bar">
+          <div class="term-dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+          <span id="termTitle" class="mono">root@server</span>
+          <span id="instTimer" class="mono" style="color:#a9a9c0;margin-left:8px">00:00</span>
+          <span style="margin-left:auto;color:#7ee787">● LIVE</span>
+          <button class="mini-btn" style="background:#2a2a38;border-color:#3a3a4a;color:#c9c9dc" onclick="copyTerm()">复制日志</button>
+        </div>
+        <div class="term-body" id="termBody"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="abortInstall()">■ 中止安装</button>
+        <span class="small">安装中断不会影响服务器上已有的站点数据</span>
+      </div>
+    </div>
+
+    <!-- 第四步 -->
+    <div class="pane" data-pane="4">
+      <div class="pane-title">第四步：安装完成</div>
+      <div class="pane-desc">宝塔面板已在你的服务器上运行。保存下面的信息，然后就可以登录面板了。</div>
+      <div id="resultArea"></div>
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="goStep('home')">← 返回首页</button>
+        <button class="btn btn-primary" onclick="goStep('rescue')">去面板急救箱看看</button>
+      </div>
+    </div>
+
+    <!-- 面板急救箱 -->
+    <div class="pane" data-pane="rescue">
+      <div class="pane-title">🩹 面板急救箱</div>
+      <div class="pane-desc">面板打不开、忘了账号密码或端口时，直接连服务器处理，不需要登录面板。</div>
+
+      <div class="hint-box">💡
+        <div>下面填的是 <b>服务器的 SSH 登录信息</b>（不是面板账号）。程序会连上服务器读取宝塔的配置文件。</div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-item">
+          <label>服务器 IP <span class="req">*</span></label>
+          <input type="text" id="rHost" placeholder="例如 104.17.20.100">
+        </div>
+        <div class="form-item">
+          <label>SSH 端口</label>
+          <input type="number" id="rPort" value="22">
+        </div>
+        <div class="form-item">
+          <label>SSH 用户名</label>
+          <input type="text" id="rUser" value="root">
+        </div>
+        <div class="form-item">
+          <label>SSH 密码 <span class="req">*</span></label>
+          <div class="input-with-btn">
+            <input type="password" id="rPass">
+            <button class="mini-btn" onclick="togglePwd('rPass')">👁 显示</button>
+          </div>
+        </div>
+        <div class="form-item full">
+          <label>重置面板密码 <span class="tip">仅在点了「重置密码」时使用，至少 8 位</span></label>
+          <input type="text" id="rNewPass" placeholder="留空则不执行重置">
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:16px">
+        <button class="btn btn-secondary btn-sm" onclick="rescueRun('info')">📋 查看面板信息</button>
+        <button class="btn btn-secondary btn-sm" onclick="rescueRun('portinfo')">🔍 检查端口与防火墙</button>
+        <button class="btn btn-secondary btn-sm" onclick="rescueRun('restart')">🔄 重启面板</button>
+        <button class="btn btn-secondary btn-sm" onclick="rescueRun('resetpwd')">🔑 重置面板密码</button>
+      </div>
+
+      <div class="conn-status" id="rescueStatus"></div>
+      <div class="section-title">执行结果</div>
+      <div class="out-box" id="rescueOut">尚未执行任何操作。</div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="goStep('home')">← 返回首页</button>
+        <span class="small">读不到信息，说明该机器可能还没安装宝塔面板</span>
+      </div>
+    </div>
+
+    <!-- 域名与 HTTPS -->
+    <div class="pane" data-pane="domain">
+      <div class="pane-title">🔒 域名与 HTTPS</div>
+      <div class="pane-desc">面板默认用自签证书，浏览器会提示「不是安全连接」。这里帮你确认域名解析和面板 HTTPS 状态。</div>
+
+      <div class="form-grid">
+        <div class="form-item">
+          <label>服务器 IP <span class="req">*</span></label>
+          <input type="text" id="dHost" placeholder="面板所在服务器 IP">
+        </div>
+        <div class="form-item">
+          <label>域名 <span class="tip">已解析到上面这台服务器</span></label>
+          <input type="text" id="dDomain" placeholder="例如 panel.example.com">
+        </div>
+        <div class="form-item">
+          <label>SSH 端口</label>
+          <input type="number" id="dPort" value="22">
+        </div>
+        <div class="form-item">
+          <label>SSH 密码 <span class="req">*</span></label>
+          <div class="input-with-btn">
+            <input type="password" id="dPass">
+            <button class="mini-btn" onclick="togglePwd('dPass')">👁 显示</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:16px">
+        <button class="btn btn-secondary btn-sm" onclick="checkDomain()">🌐 检查域名解析</button>
+        <button class="btn btn-secondary btn-sm" onclick="checkSSL()">🔐 查看面板 HTTPS 状态</button>
+      </div>
+
+      <div class="conn-status" id="domainStatus"></div>
+      <div class="section-title">检查结果</div>
+      <div class="out-box" id="domainOut">尚未执行检查。</div>
+
+      <div class="hint-box warn" style="margin-top:16px">⚠️
+        <div>宝塔面板默认已用自签证书开启 HTTPS，浏览器报「不安全」是正常现象，可在面板「设置 → 面板SSL」上传自己的证书。要彻底消除告警，建议给面板绑定域名并申请正式证书。</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="goStep('home')">← 返回首页</button>
+        <span class="small">证书申请需在面板内操作，本工具只做前置检查</span>
+      </div>
+    </div>
+
+    <!-- 直接给我命令 -->
+    <div class="pane" data-pane="cmd">
+      <div class="pane-title">⌨️ 直接给我命令</div>
+      <div class="pane-desc">生成一条包含你全部设置的宝塔官方安装命令，复制到任意 SSH 客户端执行即可，效果与自动安装一致。</div>
+
+      <div class="form-grid">
+        <div class="form-item">
+          <label>面板用户名</label>
+          <input type="text" id="cUser" value="admin">
+        </div>
+        <div class="form-item">
+          <label>面板密码</label>
+          <div class="input-with-btn">
+            <input type="text" id="cPass" placeholder="留空自动生成">
+            <button class="mini-btn" onclick="fillRandom(true)">🎲 随机</button>
+          </div>
+        </div>
+        <div class="form-item">
+          <label>面板端口</label>
+          <input type="number" id="cPort" placeholder="留空自动生成">
+        </div>
+        <div class="form-item">
+          <label>安全入口</label>
+          <input type="text" id="cSafePath" placeholder="留空自动生成">
+        </div>
+      </div>
+
+      <div class="section-title">安装版本</div>
+      <div class="radio-cards" id="cmdVersionCards"></div>
+
+      <div class="section-title">下载线路</div>
+      <div class="radio-cards" id="cmdMirrorCards"></div>
+
+      <div style="margin-top:16px">
+        <button class="btn btn-primary btn-sm" onclick="generateCmd()">生成安装命令</button>
+      </div>
+      <div class="section-title">命令</div>
+      <div class="cmd-box" id="cmdBox">尚未生成。点击上方按钮生成命令。</div>
+      <div style="display:flex;gap:9px;margin-top:10px">
+        <button class="btn btn-secondary btn-sm" onclick="copyCmd()">📋 复制命令</button>
+      </div>
+
+      <div class="hint-box warn" style="margin-top:16px">⚠️
+        <div>命令里包含明文面板密码，请勿截图或分享。执行前请确认是<b>全新或纯净系统</b>，宝塔官方脚本不支持在已有 Web/MySQL 环境的机器上直接安装。</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="goStep('home')">← 返回首页</button>
+        <span class="small">需要 root 权限执行</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  宝塔面板一键安装器 · 调用 <a href="https://www.bt.cn/new/download.html" target="_blank" rel="noopener">宝塔官方安装脚本</a> ·
+  非官方工具，与宝塔官方无隶属关系 ·
+  仅供个人学习与合法用途
+</footer>
+
+<div class="modal hidden" id="hostKeyModal" role="dialog" aria-modal="true" aria-labelledby="hostKeyTitle">
+  <div class="modal-card">
+    <div class="modal-title" id="hostKeyTitle">确认服务器主机指纹</div>
+    <p>首次连接 <b id="hkHost">—</b>。请核对该指纹与服务器真实指纹一致，确认后才会继续。</p>
+    <div class="fp" id="hkFp">—</div>
+    <p id="hkTip">指纹会保存在本机；以后发生变化会被拦截。</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="hkCancel" type="button">取消</button>
+      <button class="btn btn-primary" id="hkTrust" type="button">信任并继续</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const $ = (id) => document.getElementById(id);
+let meta = { versions: [], mirrors: [] };
+let selectedVersion = 'stable12';
+let selectedMirror = 'auto';
+let lastDone = null;
+let termText = '';
+
+/* ---------- 通用 ---------- */
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => el.classList.remove('show'), 1900);
+}
+function togglePwd(id) {
+  const el = $(id || 'sshPass');
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+function toggleAuthMode() {
+  const isKey = $('authType').value === 'key';
+  $('passwordItem').classList.toggle('hidden', isKey);
+  $('keyItem').classList.toggle('hidden', !isKey);
+}
+function markInvalid(id, bad) {
+  const el = $(id);
+  if (el) el.classList.toggle('invalid', !!bad);
+}
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('已复制')).catch(() => toast('复制失败，请手动选择'));
+}
+
+/** 状态行统一用 DOM 构造，杜绝把服务器返回的文本拼进 innerHTML */
+function setConnStatus(el, state, text) {
+  el.className = 'conn-status' + (state ? ' ' + state : '');
+  el.textContent = '';
+  if (state === 'loading') {
+    const sp = document.createElement('div');
+    sp.className = 'spinner';
+    el.appendChild(sp);
+  } else {
+    const ic = document.createElement('span');
+    ic.textContent = state === 'ok' ? '✓' : '✕';
+    el.appendChild(ic);
+  }
+  const tx = document.createElement('span');
+  tx.textContent = text == null ? '' : String(text);
+  el.appendChild(tx);
+}
+
+let pendingHostKey = null;
+
+function isHostKeyError(res) {
+  return !!res && (res.code === 'HOSTKEY_UNKNOWN' || res.code === 'HOSTKEY_MISMATCH');
+}
+
+function showHostKey(info, retry) {
+  pendingHostKey = { info, retry: retry || null };
+  const mismatch = info.code === 'HOSTKEY_MISMATCH';
+  $('hkHost').textContent = (info.host || '') + ':' + (info.port || 22);
+  $('hkFp').textContent = info.fingerprint || '（未获取到指纹）';
+  $('hkTip').textContent = mismatch
+    ? '与本地记录不一致（记录值：' + (info.knownFingerprint || '无') + '）。已阻止连接；若确认服务器刚重装，请删除 data/known_hosts.json 中对应条目后重试。'
+    : '指纹会保存在本机；以后发生变化会被拦截。';
+  $('hkTrust').classList.toggle('hidden', mismatch);
+  $('hostKeyModal').classList.remove('hidden');
+}
+
+function closeHostKey() {
+  $('hostKeyModal').classList.add('hidden');
+  pendingHostKey = null;
+}
+
+function trustHostKey() {
+  if (!pendingHostKey) return;
+  const info = pendingHostKey.info;
+  const retry = pendingHostKey.retry;
+  const btn = $('hkTrust');
+  btn.disabled = true;
+  socket.emit('hostkey:trust', { host: info.host, port: info.port, fingerprint: info.fingerprint }, (r) => {
+    btn.disabled = false;
+    if (!r || !r.ok) { toast((r && r.msg) || '保存指纹失败'); return; }
+    closeHostKey();
+    if (typeof retry === 'function') retry();
+  });
+}
+
+/** 返回 true 表示这是指纹问题，已交给弹窗处理，调用方不要再渲染错误 */
+function handleHostKey(res, retry) {
+  if (!isHostKeyError(res)) return false;
+  showHostKey(res, res.code === 'HOSTKEY_UNKNOWN' ? retry : null);
+  return true;
+}
+
+/* ---------- 步骤切换 ---------- */
+function goStep(n) {
+  const isHome = String(n) === 'home';
+  $('wizard').classList.toggle('hidden', isHome);
+  $('hero').style.display = isHome ? '' : 'none';
+  document.querySelectorAll('.pane').forEach((p) => p.classList.toggle('show', p.dataset.pane === String(n)));
+  document.querySelectorAll('.step-item').forEach((s) => {
+    const sn = parseInt(s.dataset.step, 10);
+    s.classList.toggle('active', sn === n);
+    s.classList.toggle('done', typeof n === 'number' && sn < n);
+  });
+  const bar = $('stepsBar');
+  if (['rescue', 'domain', 'cmd'].includes(String(n))) {
+    bar.classList.add('hidden');
+  } else if (n !== 'home') {
+    bar.classList.remove('hidden');
+  }
+  if (n === 'cmd') renderCmdCards();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ---------- 服务器配置收集 ---------- */
+function collectServer() {
+  return {
+    host: $('host').value.trim(),
+    sshPort: Number($('sshPort').value) || 22,
+    sshUser: $('sshUser').value.trim() || 'root',
+    password: $('authType').value === 'password' ? $('sshPass').value : '',
+    privateKey: $('authType').value === 'key' ? $('sshKey').value.trim() : '',
+  };
+}
+
+/* ---------- 测试连接 ---------- */
+function testConnection() {
+  const cfg = collectServer();
+  const status = $('connStatus');
+  if (!cfg.host) { markInvalid('host', true); return; }
+  if ($('authType').value === 'password' && !cfg.password.trim()) { markInvalid('sshPass', true); return; }
+  markInvalid('host', false); markInvalid('sshPass', false);
+
+  const btn = $('testBtn');
+  btn.disabled = true;
+  setConnStatus(status, 'loading', '正在连接 ' + cfg.host + ' …');
+
+  socket.emit('ssh:test', cfg, (res) => {
+    btn.disabled = false;
+    if (handleHostKey(res, testConnection)) return;
+    setConnStatus(status, res.ok ? 'ok' : 'fail', res.msg + (res.ok ? '，可以进入下一步了' : ''));
+    if (res.ok) detectSystem(cfg);
+  });
+  setTimeout(() => {
+    if (btn.disabled) { btn.disabled = false; setConnStatus(status, 'fail', '连接测试超时（45 秒无响应）'); }
+  }, 45000);
+}
+
+/* ---------- 系统识别 ---------- */
+function detectSystem(cfg) {
+  const status = $('connStatus');
+  setConnStatus(status, 'loading', '正在识别服务器系统类型与版本…');
+  socket.emit('system:detect', cfg, (res) => {
+    if (handleHostKey(res, () => detectSystem(cfg))) return;
+    if (!res.ok) {
+      setConnStatus(status, 'fail', res.msg || '系统识别失败');
+      return;
+    }
+    const j = res.judgement || {};
+    const text = (res.pretty || res.id || '未知系统') + ' · ' + (res.arch || '') +
+      ' · ' + (j.reason || '') +
+      (res.btInstalled ? '（已装宝塔，端口 ' + (res.btPort || '?') + '）' : '');
+    setConnStatus(status, j.supported ? 'ok' : 'fail', text);
+    window.__sysInfo = res;
+  });
+}
+
+/* ---------- 版本 / 线路卡片 ---------- */
+function renderCards(containerId, items, selected, onPick) {
+  const box = $(containerId);
+  box.innerHTML = items.map((it) => `
+    <div class="radio-card ${it.key === selected ? 'selected' : ''}" data-key="${escapeHtml(it.key)}">
+      <div class="rc-title"><span>${escapeHtml(it.label)}</span>${it.key === selected ? '<span class="rc-check">✓</span>' : ''}</div>
+      ${it.note ? `<div class="rc-note">${escapeHtml(it.note)}</div>` : ''}
+    </div>`).join('');
+  box.querySelectorAll('.radio-card').forEach((el) => {
+    el.addEventListener('click', () => onPick(el.dataset.key));
+  });
+}
+function renderVersionCards() {
+  renderCards('versionCards', meta.versions, selectedVersion, (key) => { selectedVersion = key; renderVersionCards(); });
+  renderCards('mirrorCards', meta.mirrors, selectedMirror, (key) => { selectedMirror = key; renderVersionCards(); });
+}
+function renderCmdCards() {
+  renderCards('cmdVersionCards', meta.versions, selectedVersion, (key) => { selectedVersion = key; renderCmdCards(); });
+  renderCards('cmdMirrorCards', meta.mirrors, selectedMirror, (key) => { selectedMirror = key; renderCmdCards(); });
+}
+
+/* ---------- 随机填充 ---------- */
+function fillRandom(cmdOnly) {
+  socket.emit('creds:random', {}, (res) => {
+    if (!res || !res.ok) return;
+    if (cmdOnly) {
+      $('cUser').value = res.username;
+      $('cPass').value = res.password;
+      $('cPort').value = res.port;
+      $('cSafePath').value = res.safePath;
+    } else {
+      $('panelUser').value = res.username;
+      $('panelPass').value = res.password;
+      $('panelPort').value = res.port;
+      $('safePath').value = res.safePath;
+    }
+    toast('已生成随机凭据，请记下来');
+  });
+}
+
+/* ---------- 安装 ---------- */
+function startInstall() {
+  const server = collectServer();
+  if (!server.host) { toast('请先在第一步填写服务器信息'); goStep(1); return; }
+  const sys = window.__sysInfo;
+  if (!sys || !sys.judgement || !sys.judgement.supported) {
+    toast('请先在第一步完成「测试连接」，确认系统受支持');
+    goStep(1);
+    return;
+  }
+
+  const cfg = Object.assign({}, server, {
+    btVersion: selectedVersion,
+    mirror: selectedMirror,
+    panelUser: $('panelUser').value.trim() || 'admin',
+    panelPass: $('panelPass').value.trim(),
+    panelPort: $('panelPort').value.trim(),
+    safePath: $('safePath').value.trim(),
+  });
+
+  termText = '';
+  $('termBody').innerHTML = '';
+  $('termTitle').textContent = 'root@' + server.host;
+  installStartedAt = 0;
+  if ($('instTimer')) $('instTimer').textContent = '00:00';
+  hideStall();
+  document.querySelectorAll('.stage').forEach((s) => s.classList.remove('active', 'done'));
+  setStage(1);
+
+  goStep(3);
+  $('instTitle').textContent = '正在安装，请稍候…';
+  socket.emit('install:start', cfg);
+}
+
+function setStage(n) {
+  document.querySelectorAll('.stage').forEach((s) => {
+    const sn = Number(s.dataset.stage);
+    s.classList.toggle('active', sn === n);
+    s.classList.toggle('done', sn < n);
+  });
+}
+
+const MAX_TERM_NODES = 600;   // 终端最多保留的 DOM 节点数，超出就裁掉最早的
+
+function appendTerm(line, level) {
+  termText += line;
+  const body = $('termBody');
+  // 有新行落地时，先把占据最后一行的进度条收尾成普通行
+  const prog = $('termProgress');
+  if (prog) prog.remove();
+  const span = document.createElement('span');
+  if (level) span.className = 'l-' + level;
+  span.textContent = line;
+  body.appendChild(span);
+  // 限制节点数量，避免长时间安装把 DOM 撑爆（进度条已单独处理，这里再兜一层）
+  while (body.childElementCount > MAX_TERM_NODES) body.removeChild(body.firstElementChild);
+  body.scrollTop = body.scrollHeight;
+}
+
+/** 进度条通道：始终复用同一个节点原地刷新，不产生新行 */
+function updateProgress(text) {
+  const body = $('termBody');
+  let el = $('termProgress');
+  if (!el) {
+    el = document.createElement('span');
+    el.id = 'termProgress';
+    el.className = 'l-progress';
+    body.appendChild(el);
+  }
+  el.textContent = text + '\n';
+  body.scrollTop = body.scrollHeight;
+  const last = termText.lastIndexOf('\n');
+  termText = termText.slice(0, last === -1 ? 0 : last + 1) + text + '\n';
+}
+
+function abortInstall() {
+  socket.emit('install:abort');
+}
+function copyTerm() {
+  copyText(termText || '(暂无日志)');
+}
+
+socket.on('log', (d) => {
+  if (d && d.text) appendTerm('[' + ({ info: '安装器', success: '安装器', warn: '安装器', error: '安装器' }[d.level] || '安装器') + '] ' + d.text + '\n', d.level);
+});
+socket.on('term', (line) => appendTerm(line));
+socket.on('progress', (text) => { if (text) updateProgress(String(text)); });
+socket.on('cmd', (d) => { if (d && d.text) appendTerm('[命令] ' + d.text + '\n', 'warn'); });
+socket.on('stage', (d) => { if (d && d.stage) setStage(d.stage); if (d && d.text) $('instTitle').textContent = d.text; });
+socket.on('system', (d) => {
+  if (d && d.judgement) {
+    appendTerm('[安装器] 系统：' + ((d.info && (d.info.pretty || d.info.id)) || '未知') + '（' + ((d.info && d.info.arch) || '?') + '）\n', 'success');
+    appendTerm('[安装器] ' + d.judgement.reason + '\n', d.judgement.supported ? 'success' : 'error');
+  }
+});
+socket.on('install:failed', (d) => {
+  if (d && isHostKeyError(d)) {
+    showHostKey(d, d.code === 'HOSTKEY_UNKNOWN' ? () => startInstall() : null);
+    return;
+  }
+  const msg = (d && d.error) || '安装失败';
+  appendTerm('[安装器] ✗ ' + msg + '\n', 'error');
+  $('instTitle').textContent = '安装未完成';
+  document.querySelectorAll('.stage').forEach((s) => { if (s.classList.contains('active')) s.classList.remove('active'); });
+  toast('安装未完成，请查看日志');
+});
+socket.on('install:done', (d) => {
+  lastDone = d;
+  setStage(4);
+  document.querySelectorAll('.stage').forEach((s) => s.classList.add('done'));
+  goStep(4);
+  renderResult(d);
+});
+/* 计时与卡住提示 */
+let installStartedAt = 0;
+function fmtSec(s) {
+  const m = Math.floor(s / 60), r = s % 60;
+  return String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
+}
+socket.on('tick', (d) => {
+  if (!d) return;
+  if (!installStartedAt) installStartedAt = Date.now() - d.elapsedMs;
+  if ($('instTimer')) $('instTimer').textContent = fmtSec(Math.round(d.elapsedMs / 1000));
+});
+socket.on('install:stall', (d) => {
+  if (!d) return;
+  $('stallIdle').textContent = d.idleSec;
+  $('stallHint').classList.remove('hidden');
+  appendTerm('[安装器] 已 ' + d.idleSec + ' 秒无输出，疑似卡在下载阶段。可继续等待，或点「换线路重试」。\n', 'warn');
+});
+function hideStall() {
+  $('stallHint').classList.add('hidden');
+}
+function abortAndRetry() {
+  hideStall();
+  socket.emit('install:abort');
+  // 依次轮换线路：auto → hk → cdn → eu → cn
+  const order = ['auto', 'hk', 'cdn', 'eu', 'cn'];
+  const idx = order.indexOf(selectedMirror);
+  selectedMirror = order[(idx + 1) % order.length];
+  renderVersionCards();
+  toast('已切换线路：' + (meta.mirrors.find((m) => m.key === selectedMirror) || {}).label);
+  setTimeout(() => startInstall(), 900);
+}
+
+function safeHttpUrl(u) {
+  try {
+    const x = new URL(String(u));
+    return (x.protocol === 'http:' || x.protocol === 'https:') ? x.href : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function renderResult(d) {
+  const area = $('resultArea');
+  area.textContent = '';
+
+  const box = document.createElement('div');
+  box.className = 'result-box';
+
+  const title = document.createElement('div');
+  title.className = 'result-title';
+  title.textContent = '🎉 安装成功！';
+  box.appendChild(title);
+
+  const sub = document.createElement('div');
+  sub.className = 'result-sub';
+  sub.appendChild(document.createTextNode('宝塔面板已在你的服务器上运行。请先到云控制台安全组放行 '));
+  const portB = document.createElement('b');
+  portB.textContent = d.port || '面板';
+  sub.appendChild(portB);
+  sub.appendChild(document.createTextNode(' 端口（TCP），再访问下面的地址。'));
+  box.appendChild(sub);
+
+  const rows = [];
+  if (d.url) rows.push({ label: '面板访问地址（点击打开）', value: d.url, href: safeHttpUrl(d.url) });
+  rows.push({ label: '用户名', value: d.username || '未知' });
+  rows.push({ label: '面板密码', value: d.password || '（未读取到，请在服务器执行 bt default 查看）', pass: true });
+  if (d.port) rows.push({ label: '面板端口', value: d.port });
+  if (d.safePath) rows.push({ label: '安全入口', value: d.safePath });
+
+  rows.forEach((r) => {
+    const row = document.createElement('div');
+    row.className = 'copy-row';
+
+    const left = document.createElement('div');
+    left.style.flex = '1';
+    left.style.minWidth = '0';
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = r.label;
+    left.appendChild(label);
+
+    const value = document.createElement('div');
+    value.className = 'value' + (r.pass ? ' pass' : '');
+    if (r.href) {
+      const a = document.createElement('a');
+      a.href = r.href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = r.value;
+      value.appendChild(a);
+    } else {
+      value.textContent = r.value;
+    }
+    left.appendChild(value);
+
+    const btn = document.createElement('button');
+    btn.className = 'mini-btn';
+    btn.type = 'button';
+    btn.textContent = '复制';
+    btn.addEventListener('click', () => copyText(r.value));
+
+    row.appendChild(left);
+    row.appendChild(btn);
+    box.appendChild(row);
+  });
+
+  if (d.note) {
+    const hint = document.createElement('div');
+    hint.className = 'hint-box warn';
+    hint.style.margin = '12px 0 0';
+    const icon = document.createElement('span');
+    icon.textContent = '⚠️';
+    const text = document.createElement('div');
+    text.textContent = d.note;
+    hint.appendChild(icon);
+    hint.appendChild(text);
+    box.appendChild(hint);
+  }
+
+  const tip = document.createElement('div');
+  tip.className = 'hint-box';
+  tip.style.margin = '12px 0 0';
+  tip.appendChild(document.createTextNode('💡 '));
+  const tipText = document.createElement('div');
+  tipText.textContent = '打不开面板？① 确认云安全组已放行面板端口（TCP）；② 地址要带上安全入口路径；③ 仍不行到服务器执行 bt default 核对信息。';
+  tip.appendChild(tipText);
+  box.appendChild(tip);
+
+  area.appendChild(box);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function escapeJs(s) {
+  return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+}
+
+/* ---------- 急救箱 ---------- */
+function collectRescue() {
+  return {
+    host: $('rHost').value.trim(),
+    sshPort: Number($('rPort').value) || 22,
+    sshUser: $('rUser').value.trim() || 'root',
+    password: $('rPass').value,
+  };
+}
+
+function rescueRun(action) {
+  const srv = collectRescue();
+  if (!srv.host) { toast('请填写服务器 IP'); return; }
+  if (!srv.password) { toast('请填写 SSH 密码'); return; }
+
+  const status = $('rescueStatus');
+  setConnStatus(status, 'loading', '正在执行…');
+  $('rescueOut').textContent = '';
+
+  socket.emit('rescue:run', {
+    server: srv,
+    action,
+    newPassword: $('rNewPass').value.trim(),
+  }, (res) => {
+    if (handleHostKey(res, () => rescueRun(action))) return;
+    setConnStatus(status, res.ok ? 'ok' : 'fail', res.ok ? '执行完成' : '执行失败');
+    $('rescueOut').textContent = res.output || '(无输出)';
+  });
+}
+
+/* ---------- 域名 / HTTPS ---------- */
+function checkDomain() {
+  const domain = $('dDomain').value.trim();
+  const ip = $('dHost').value.trim();
+  if (!domain) { toast('请填写域名'); return; }
+  const status = $('domainStatus');
+  setConnStatus(status, 'loading', '正在查询 DNS…');
+  socket.emit('domain:check', { domain, expectedIp: ip }, (res) => {
+    setConnStatus(status, res.ok ? 'ok' : 'fail', res.msg);
+    $('domainOut').textContent = res.ok ? '解析结果：' + (res.ips || []).join(', ') : res.msg;
+  });
+}
+
+function checkSSL() {
+  const srv = {
+    host: $('dHost').value.trim(),
+    sshPort: Number($('dPort').value) || 22,
+    sshUser: 'root',
+    password: $('dPass').value,
+  };
+  if (!srv.host) { toast('请填写服务器 IP'); return; }
+  if (!srv.password) { toast('请填写 SSH 密码'); return; }
+  const status = $('domainStatus');
+  setConnStatus(status, 'loading', '正在读取面板状态…');
+  socket.emit('ssl:status', { server: srv }, (res) => {
+    if (handleHostKey(res, checkSSL)) return;
+    setConnStatus(status, res.ok ? 'ok' : 'fail', res.ok ? '读取完成' : '读取失败');
+    $('domainOut').textContent = res.output || '(无输出)';
+  });
+}
+
+/* ---------- 命令生成 ---------- */
+function generateCmd() {
+  const cfg = {
+    btVersion: selectedVersion,
+    mirror: selectedMirror,
+    panelUser: $('cUser').value.trim() || 'admin',
+    panelPass: $('cPass').value.trim(),
+    panelPort: $('cPort').value.trim(),
+    safePath: $('cSafePath').value.trim(),
+  };
+  socket.emit('cmd:generate', cfg, (res) => {
+    if (!res || !res.ok) { toast('生成失败：' + (res && res.msg || '未知错误')); return; }
+    $('cmdBox').textContent = res.command;
+    toast('命令已生成');
+  });
+}
+function copyCmd() {
+  const text = $('cmdBox').textContent;
+  if (!text || text.startsWith('尚未生成')) { toast('请先生成命令'); return; }
+  copyText(text);
+}
+
+/* ---------- 初始化 ---------- */
+socket.on('connect', () => {
+  socket.emit('meta:get', {}, (res) => {
+    if (res && res.ok) {
+      meta = res;
+      renderVersionCards();
+      renderCmdCards();
+    }
+  });
+});
+$('hkCancel').addEventListener('click', closeHostKey);
+$('hkTrust').addEventListener('click', trustHostKey);
+$('sshPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') testConnection(); });
+goStep('home');
+</script>
+</body>
+</html>
