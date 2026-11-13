@@ -5,6 +5,10 @@
 
 > 非官方工具，与宝塔官方无隶属关系。安装动作全部由 [宝塔官方脚本](https://www.bt.cn/new/download.html) 完成。
 
+![宝塔面板一键安装器主界面](docs/screenshot.png)
+
+<p align="center">主界面：开始安装 · 面板急救箱 · 域名与 HTTPS · 直接给我命令</p>
+
 ## 功能
 
 - 🚀 **开始安装**：四步向导（服务器信息 → 面板配置 → 自动安装 → 安装完成）
@@ -45,7 +49,9 @@
 .
 ├── server.js                    # 后端：SSH、系统识别、脚本选择、安装编排
 ├── public/index.html            # 前端界面（单文件）
+├── lib/linefeeder.js            # 终端输出分帧（进度条单独通道）
 ├── desktop/Program.cs           # 桌面窗口外壳
+├── docs/screenshot.png          # 界面截图
 ├── package.json
 ├── LICENSE
 └── THIRD-PARTY-NOTICES.md
