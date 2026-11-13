@@ -28,3 +28,6 @@ build/
 # 工具缓存
 .ruff_cache/
 .dumate/
+
+# 本地检查产物
+项目检查报告.html
