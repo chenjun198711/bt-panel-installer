@@ -29,5 +29,8 @@ build/
 .ruff_cache/
 .dumate/
 
+# 解压出来的发布目录
+BtPanel-Installer-*/
+
 # 本地检查产物
 项目检查报告.html
